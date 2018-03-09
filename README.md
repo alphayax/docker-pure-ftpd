@@ -1,47 +1,92 @@
 
 Docker Pure-ftpd Server
 ============================
-https://hub.docker.com/r/stilliard/pure-ftpd/
+
+https://hub.docker.com/r/alphayax/docker-pure-ftpd/
 
 [![Build Status](https://travis-ci.org/stilliard/docker-pure-ftpd.svg?branch=master)](https://travis-ci.org/stilliard/docker-pure-ftpd)
-[![Docker Build Status](https://img.shields.io/docker/build/stilliard/pure-ftpd.svg)](https://hub.docker.com/r/stilliard/pure-ftpd/)
-[![Docker Pulls](https://img.shields.io/docker/pulls/stilliard/pure-ftpd.svg)](https://hub.docker.com/r/stilliard/pure-ftpd/)
+[![Docker Build Status](https://img.shields.io/docker/build/alphayax/docker-pure-ftpd.svg)](https://hub.docker.com/r/alphayax/docker-pure-ftpd/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/alphayax/docker-pure-ftpd.svg)](https://hub.docker.com/r/alphayax/docker-pure-ftpd/)
 
 Pull down with docker:
 ```bash
-docker pull stilliard/pure-ftpd:hardened
+docker pull alphayax/docker-pure-ftpd:latest
 ```
 
-**Often needing to run as `sudo`, e.g. `sudo docker pull stilliard/pure-ftpd`**
 
-----------------------------------------
+# Usage
 
-**My advice is to extend this image to make any changes.**  
-This is because rebuilding the entire docker image via a fork can be slow as it rebuilds the entire pure-ftpd package from source. 
-
-Instead you can create a new project with a `DOCKERFILE` like so:
+## With Docker
 
 ```
-FROM stilliard/pure-ftpd
-
-# e.g. you could change the defult command run:
-CMD /run.sh -c 30 -C 10 -l puredb:/etc/pure-ftpd/pureftpd.pdb -E -j -R -P $PUBLICHOST -p 30000:30059
+docker run -d --name ftpd_server 	\
+  -p 21:21 				\
+  -p 30000-30009:30000-30009 		\
+  -e "PUBLICHOST=localhost" 		\
+  -e "MAX_CLIENTS=50"			\
+  -e "MAX_CLIENT_PER_IP=50"		\
+  alphayax/docker-pure-ftpd:latest
 ```
 
-*Then you can build your own image, `docker build --rm -t my-pure-ftp .`, where my-pure-ftp is the name you want to build as*
 
-----------------------------------------
+## With Kubernetes
 
-Starting it 
-------------------------------
+Exemple of deployment
 
-`docker run -d --name ftpd_server -p 21:21 -p 30000-30009:30000-30009 -e "PUBLICHOST=localhost" stilliard/pure-ftpd:hardened`
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ftp
+spec:
+  replicas: 1
 
-*Or for your own image, replace stilliard/pure-ftpd with the name you built it with, e.g. my-pure-ftp*
+  template:
+    metadata:
+      labels:
+        app: ftp
+    spec:
 
-You can also pass ADDED_FLAGS as an env variable to add additional options such as --tls to the pure-ftpd command.  
-e.g. ` -e "ADDED_FLAGS=--tls=2" `
+      containers:
+      - name: ftp
+        image: alphayax/pure-ftpd:hardened
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 20
+        - containerPort: 21
+        - containerPort: 30001
+        - containerPort: 30002
+        - containerPort: 30003
+        - containerPort: 30004
+        - containerPort: 30005
+        - containerPort: 30006
+        - containerPort: 30007
+        - containerPort: 30008
+        - containerPort: 30009
+        env:
+        - name: MAX_CLIENTS
+          value: 100
+        - name: MAX_CLIENT_PER_IP
+          value: 100
+        - name: PUBLICHOST
+          value: 1.2.3.4
 
+        volumeMounts:
+          - name: ftp-data
+            mountPath: /home/ftpusers/
+          - name: ftp-user-conf
+            mountPath: /etc/pure-ftpd/passwd/
+
+      volumes:
+        - name: ftp-data
+          persistentVolumeClaim:
+            claimName: ftp-data-storage-claim
+        - name: ftp-user-conf
+          configMap:
+            name: ftp-user-conf
+```
+
+> Note that you'll need a persistantVolumeClaim and a ConfigMap too
 
 Operating it
 ------------------------------

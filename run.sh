@@ -4,6 +4,10 @@
 # e.g. -e "ADDED_FLAGS=--tls=2"
 PURE_FTPD_FLAGS="$@ $ADDED_FLAGS "
 
+# Add environment variables
+PURE_FTPD_FLAGS="$PURE_FTPD_FLAGS -c $MAX_CLIENTS -C $MAX_CLIENT_PER_IP -P $PUBLICHOST -p $PASSIVE_PORT_RANGE_START:$PASSIVE_PORT_RANGE_END"
+
+
 # start rsyslog
 if [[ "$PURE_FTPD_FLAGS" == *" -d "* ]] || [[ "$PURE_FTPD_FLAGS" == *"--verboselog"* ]]
 then
